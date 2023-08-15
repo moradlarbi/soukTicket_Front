@@ -1,0 +1,32 @@
+/* The code is defining custom fonts using the `@font-face` rule. It specifies the font family name,
+the source file location, the font weight, font style, and font display properties for each font.
+These custom fonts can then be used in the CSS styles for the website. */
+@font-face {
+  font-family: "MonumentExtended";
+  src: url("/fonts/MonumentExtended-Regular.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "MonumentExtended";
+  src: url("/fonts/MonumentExtended-Ultrabold.otf") format("opentype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "SpaceGrotesk";
+  src: url("/fonts/SpaceGrotesk-SemiBold.otf") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "foggy";
+  src: url("/fonts/foggy-regular.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}

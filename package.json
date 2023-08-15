@@ -1,0 +1,45 @@
+{
+  "name": "soukticket-front",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.10.6",
+    "@emotion/server": "^11.10.0",
+    "@emotion/styled": "^11.10.6",
+    "@mui/icons-material": "^5.11.11",
+    "@mui/lab": "^5.0.0-alpha.127",
+    "@mui/material": "^5.12.1",
+    "@mui/styles": "^5.12.0",
+    "@mui/x-date-pickers": "^6.0.4",
+    "@next/font": "^13.3.0",
+    "@react-google-maps/api": "^2.18.1",
+    "axios": "^1.3.5",
+    "date-fns": "^2.29.3",
+    "eslint": "8.36.0",
+    "eslint-config-next": "^12.0.4",
+    "formik": "^2.2.9",
+    "framer-motion": "^10.12.2",
+    "js-cookie": "^3.0.1",
+    "next": "13.2.4",
+    "qs": "^6.11.1",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-dropzone": "^14.2.3",
+    "react-google-maps": "^9.4.5",
+    "react-intersection-observer": "^9.4.3",
+    "use-places-autocomplete": "^4.0.0",
+    "uuid": "^9.0.0",
+    "yup": "^1.0.2"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.14",
+    "postcss": "^8.4.21",
+    "tailwindcss": "^3.2.7"
+  }
+}

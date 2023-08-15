@@ -1,0 +1,60 @@
+/* This code is using the Tailwind CSS framework to style a webpage. The `@tailwind` directives are
+used to include the base, components, and utilities styles from the Tailwind library. The `.events`
+class is used to apply a background gradient to an element with that class. The `.eventImage` class
+is used to apply a background gradient to another element with that class. The `::-webkit-scrollbar`
+selector is used to style the scrollbar in webkit-based browsers (such as Chrome and Safari) by
+setting its width to 0rem. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.events {
+  background-image: linear-gradient(
+    to right bottom,
+    #4465d8,
+    #5a66d1,
+    #6967ca,
+    #7569c3,
+    #7e6bbd,
+    #7e6dbe,
+    #7d6fbe,
+    #7d71bf,
+    #7373c6,
+    #6674cd,
+    #5577d4,
+    #3d79db
+  );
+}
+.eventImage {
+  background-image: linear-gradient(rgb(30 41 59), transparent 100px),
+    linear-gradient(to top, rgb(30 41 59), transparent 100%);
+}
+::-webkit-scrollbar {
+  width: 0rem; /* set the width of the scrollbar */
+}
+
+.noise {
+  background: linear-gradient(to right, #ffc328, #4c36f3),
+    url("/public/assets/grainy_noise.svg");
+}
+
+.fade-in {
+  animation: fadeIn 1s;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.gradient {
+  background-image: radial-gradient(
+    circle farthest-corner at 10% 20%,
+    rgba(100, 43, 115, 1) 0%,
+    rgba(4, 0, 4, 1) 90%
+  );
+}
