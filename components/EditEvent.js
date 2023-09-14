@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useFormik, FormikProvider } from "formik";
+import { useFormik, FormikProvider, Field, FieldArray, ErrorMessage  } from "formik";
 import * as Yup from "yup";
 import { useDropzone } from "react-dropzone";
 import {
@@ -23,20 +23,16 @@ import {
     Stepper,
     TextField,
     ThemeProvider,
-    createTheme,
+    createTheme, InputAdornment, Typography
 } from "@mui/material";
-import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import { DatePicker, LocalizationProvider,DateTimePicker } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import {
-    AddPhotoAlternateOutlined,
     ImageOutlined,
     CheckCircle,
     RadioButtonUnchecked,
-    FestivalOutlined,
-    FactoryOutlined,
-    Nightlife,
-    Forest,
-    MicExternalOn,
+    RemoveCircle,
+    Add,
 } from "@mui/icons-material";
 import axios from "axios";
 import { format } from "date-fns";
@@ -113,6 +109,13 @@ const EditEvent = ({ user, jwt }) => {
                 "Description de l'évènement est requis"
             ),
         tags: Yup.array().of(Yup.string()),
+        tickets: Yup.array().of(Yup.object({
+            name: Yup.string().required("Ticket name is required"),
+            price: Yup.number().required("Ticket price is required"),
+            startDate: Yup.date().required("Start date is required"),
+            endDate: Yup.date().required("End date is required"),
+            numberOfTickets: Yup.number().required("Number of tickets is required"),
+          })),
     });
     const combinedValidationSchema = Yup.object().shape({
         eventName: Yup.string().required("Nom de l'évènement est requis"),
@@ -153,6 +156,13 @@ const EditEvent = ({ user, jwt }) => {
                 "Description de l'évènement est requis"
             ),
         tags: Yup.array().of(Yup.string()),
+        tickets: Yup.array().of(Yup.object({
+            name: Yup.string().required("Ticket name is required"),
+            price: Yup.number().required("Ticket price is required"),
+            startDate: Yup.date().required("Start date is required"),
+            endDate: Yup.date().required("End date is required"),
+            numberOfTickets: Yup.number().required("Number of tickets is required"),
+          })),
     });
 
     const stepValidationSchemas = [
@@ -201,9 +211,18 @@ const EditEvent = ({ user, jwt }) => {
         Yup.object({
             tags: Yup.array().of(Yup.string()),
         }),
+        Yup.object({
+            tickets: Yup.array().of(Yup.object({
+              name: Yup.string().required("Ticket name is required"),
+              price: Yup.number().required("Ticket price is required"),
+              startDate: Yup.date().required("Start date is required"),
+              endDate: Yup.date().required("End date is required"),
+              numberOfTickets: Yup.number().required("Number of tickets is required"),
+            })),
+          }),
     ];
 
-    const steps = ["Event Details", "Event Content", "Tags"];
+    const steps = ["Event Details", "Event Content", "Tags","Ticket"];
     const handleNext = async () => {
         const currentStepSchema = stepValidationSchemas[activeStep];
         try {
@@ -232,6 +251,7 @@ const EditEvent = ({ user, jwt }) => {
             tags: Array.isArray(event.tags) ? event.tags : [event.tags],
             legalDescriptionEnabled: event.legalDescriptionEnabled,
             eventBannerFile: null,
+            tickets: Array.isArray(event.tickets) ? event.tickets : [event.tickets],
         },
         validationSchema: stepValidationSchemas[activeStep],
         onSubmit: async (values) => {
@@ -243,6 +263,15 @@ const EditEvent = ({ user, jwt }) => {
             const endDate = new Date(values.endDate);
             endDate.setHours(0, 0, 0, 0);
             const formattedEndDate = endDate.toISOString().split("T")[0];
+            let tickets = values.tickets.map((ticket) => {
+                return {
+                  name: ticket.name,
+                  price: ticket.price,
+                  startDate: format(ticket.startDate, "yyyy-MM-dd'T'HH:mm:ss'Z'"),
+                  endDate: format(ticket.endDate, "yyyy-MM-dd'T'HH:mm:ss'Z'"),
+                  numberOfTickets: ticket.numberOfTickets,
+                };
+              })
             // Create a FormData instance
             const formData = new FormData();
 
@@ -258,15 +287,11 @@ const EditEvent = ({ user, jwt }) => {
                 eventDesc: values.eventDesc,
                 legalDesc: values.legalDescription,
                 tags: Array.isArray(values.tags) ? values.tags : values.tags ? [values.tags] : [],
-
-                // publishedAt: null,
+                tickets: tickets,
             };
+            console.log(data)
             // Append the data object to formData
             formData.append("data", JSON.stringify(data));
-            // Object.keys(data).forEach(e => {
-            //   formData.append(e, data[e]);
-            // })
-            // Append the eventBanner file to formData
             formData.append("files.eventBanner", values.eventBannerFile);
             try {
                 const response = await axios.put(
@@ -341,7 +366,7 @@ const EditEvent = ({ user, jwt }) => {
         axios.get(
             `${process.env.NEXT_PUBLIC_STRAPI_URL}/events/${router.query.personalId}?populate=*`
         ).then(res => {
-            formik.setValues(res.data.data.attributes);
+            formik.setValues({...res.data.data.attributes, tickets: res.data.data.attributes.tickets.data});
 
         }).catch(err => console.log(err))
 
@@ -349,13 +374,6 @@ const EditEvent = ({ user, jwt }) => {
     useEffect(() => {
         fetchEvent()
     }, [])
-    console.log(formik?.values);
-    /* The above code is a React component that renders a form for creating an event. It uses Material-UI
-    components and Formik library for form handling. The form is divided into multiple steps using a
-    Stepper component. The user can navigate between steps using the Back and Next buttons. The form
-    includes fields for event name, type, start and end dates, location, description, legal
-    description, tags, and banner image. The form data is validated using a combined validation schema
-    before submitting the form. */
     return (
         <ThemeProvider theme={theme}>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -647,22 +665,22 @@ const EditEvent = ({ user, jwt }) => {
                                                 onClick={handleReplaceImage}
                                                 className="border border-gray-300 p-4 rounded mt-4 cursor-pointer hover:border-dashed hover:border-yellow-500 lg:h-[270px] lg:w-[480px] "
                                             >
-                                                <Image
+                                                {bannerPreview && <Image
                                                     src={bannerPreview}
                                                     alt="Event banner preview"
                                                     className="object-cover w-full h-full"
                                                     width={250}
                                                     height={250}
-                                                />
+                                                />}
                                             </div>
                                         ) : (
-                                            <div
+                                             <div
                                                 {...getBannerRootProps()}
                                                 className="border border-gray-300 p-4 rounded mt-4 cursor-pointer hover:border-dashed hover:border-yellow-500 md:w-1/2"
                                             >
                                                 <input {...getBannerInputProps()} />
-                                                <Image src={formik.values.eventBanner.data.attributes.url} width={300}
-                                                    height={400} />
+                                                {formik.values.eventBanner?.data?.attributes?.url ?<Image src={formik.values.eventBanner.data.attributes.url} width={300}
+                                                    height={400} />: null}
                                             </div>
                                         )}
                                     </div>
@@ -689,6 +707,102 @@ const EditEvent = ({ user, jwt }) => {
                                         </Select>
                                     </FormControl>
                                 </>
+                            )}
+                            {activeStep === 3 && (
+                                <FieldArray name="tickets">
+                                {({ push, remove }) => (
+                                    <>
+                                    <Box sx={{display:"flex",flexDirection:"column",gap:"10px"}}>
+                                    {/* {formik.values.tickets?.map((ticket, index) => (
+                                        <Box key={index} sx={{display:"flex", alignItems:"center",gap:"5px"}}>
+                                        <Field
+                                            name={`tickets[${index}].attributes.name`}
+                                            label="Name"
+                                            as={TextField}
+                                            error={Boolean(formik.errors.tickets?.[index]?.attributes?.name)}
+                                            helperText={<ErrorMessage name={`tickets[${index}].name`} />}
+                                        />
+                                        <Field
+                                            name={`tickets[${index}].attributes.price`}
+                                            label="Price"
+                                            type="number"
+                                            as={TextField}
+                                            error={Boolean(formik.errors.tickets?.[index]?.attributes?.price)}
+                                            helperText={<ErrorMessage name={`tickets[${index}].price`} />}
+                                            InputProps={{
+                                            endAdornment: (
+                                                <InputAdornment position="end">DZD</InputAdornment>
+                                            ),
+                                            }}
+                                        />
+                                        <Field
+                                            name={`tickets[${index}].attributes.numberOfTickets`}
+                                            label="Number of tickets"
+                                            type="number"
+                                            as={TextField}
+                                            error={Boolean(formik.errors.tickets?.[index]?.attributes?.numberOfTickets)}
+                                            helperText={<ErrorMessage name={`tickets[${index}].numberOfTickets`} />}
+                                        />
+                                        <DateTimePicker
+                                            label="Start Date and Time"
+                                            value={
+                                            formik.values.tickets[index].attributes?.startDate
+                                                ? new Date(formik.values.tickets[index].attributes?.startDate)
+                                                : null
+                                            }
+                                            onChange={(value) => {
+                                            formik.setFieldValue(`tickets[${index}].attributes.startDate`, value);
+                                            }}
+                                            minDateTime={new Date()}
+                                            format="dd/MM/yyyy hh:mm a"
+                                            renderInput={(props) => <TextField {...props} />}
+                                        />
+                                        <DateTimePicker
+                                            label="End Date and Time"
+                                            value={
+                                             formik.values.tickets[index].attributes?.endDate
+                                                ? new Date( formik.values.tickets[index].attributes?.endDate)
+                                                : null
+                                            }
+                                            onChange={(value) => {
+                                            formik.setFieldValue(`tickets[${index}].attributes.endDate`, value);
+                                            }}
+                                            minDateTime={new Date( formik.values.tickets[index].attributes?.startDate)}
+                                            format="dd/MM/yyyy hh:mm a"
+                                            renderInput={(props) => <TextField {...props} />}
+                                        />
+                                        <Button
+                                            type="button"
+                                            onClick={() => remove(index)}
+                                        >
+                                            <RemoveCircle />
+                                        </Button>
+                                        </Box>
+                                    ))} */}
+                                    </Box>
+                                    <Button
+                                        type="button"
+                                        sx={{
+                                        display:"flex",gap:"5px"
+                                        }}
+                                        onClick={() =>
+                                        push({
+                                            numberOfTickets: 1,
+                                            name: '',
+                                            price: 0,
+                                            startDate: null,
+                                            endDate: null,
+                                        })
+                                        }
+                                    >
+                                        <Typography>Add New Slug of Tickets </Typography>
+                                        <Add />
+                                        
+                                    </Button>
+                                    </>
+                                    
+                                )}
+                                </FieldArray>
                             )}
                             <div className="mt-4 flex gap-4">
                                 <Button
@@ -731,12 +845,13 @@ const EditEvent = ({ user, jwt }) => {
                                     onClick={async () => {
                                         if (activeStep === steps.length - 1) {
                                             try {
+                                                
                                                 await combinedValidationSchema.validate(formik.values, {
                                                     abortEarly: false,
                                                 });
                                                 formik.submitForm();
                                             } catch (error) {
-                                                console.error("Validation error:", error);
+                                                console.log(error)
                                             }
                                         } else {
                                             handleNext();

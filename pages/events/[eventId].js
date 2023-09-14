@@ -1,66 +1,84 @@
 import Layout from "@/components/Layout";
 import { fetcher } from "@/lib/api";
 import { Box, Button, ButtonGroup, Card, CardActions, CardContent, CardHeader, Divider, IconButton, Stack, Typography } from "@mui/material";
-import React, { useEffect, useState } from "react";
-
+import React, { use, useEffect, useState } from "react";
+import Swal from "sweetalert2";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import axios from "axios";
 import Cookies from "js-cookie";
 import { useRouter } from "next/router";
-const Tickets = ({ tickets, eventId }) => {
-  const [ticketQuantities, setTicketQuantities] = React.useState({});
-  const [designatedTicketId, setDesignatedTicketId] = React.useState();
-  const token = Cookies.get('jwt')
-  const handlePurchaseTicket = (ticketId, action) => {
-    setDesignatedTicketId(ticketId);
-    setTicketQuantities((prevQuantities) => {
-      const updatedQuantities = { ...prevQuantities };
-      const ticketIndex = tickets.findIndex((ticket) => ticket.id === ticketId);
-      if (ticketIndex !== -1 && tickets[ticketIndex].attributes.quantity > 0) {
-        if (action === 'decrease' && (prevQuantities[ticketId] || 0) > 0) {
-          updatedQuantities[ticketId] = (prevQuantities[ticketId] || 0) - 1;
-        } else if (action === 'increase' && tickets[ticketIndex].attributes.quantity > 0) {
-   updatedQuantities[ticketId] = (prevQuantities[ticketId] || 0) + 1;
-        }
+import { set } from "date-fns";
+import { number } from "yup";
+const Tickets = ({ single, jwt, eventId }) => {
+  const router = useRouter();
+  const handleRefresh = () => {
+    router.reload()
+  }
+  console.log(single)
+  let tickets = {}
+  single?.tickets?.data.map((ticket) => {
+    if (ticket.attributes?.state==="in sale"){
+      if (tickets.hasOwnProperty(ticket.attributes.name)) {
+        tickets[ticket.attributes.name] = {...tickets[ticket.attributes.name], quantity: tickets[ticket.attributes.name].quantity + 1  }
+  
+      } else {
+        tickets[ticket.attributes.name] = { quantity: 1, price: ticket.attributes.price, event: Number(eventId) }
       }
-
-      return updatedQuantities;
-    });
-  };
-  console.log(ticketQuantities[designatedTicketId]);
-  const updateTickets = async (ticketId) => {
-
-
-    await axios.post(`${process.env.NEXT_PUBLIC_STRAPI_URL}/transactions`, {
-      data: {
-        ticket: designatedTicketId,
-        quantite: ticketQuantities[designatedTicketId]
-      },
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + token,
-      },
-    }).then((response) => {
-      if (response.status === 200) {
-        console.log('Ticket quantities updated:', response);
-      }
-    }).catch((error) => {
-      console.error('Error updating ticket quantities:', error);
-    });
-
-  };
+    }
+    
+  });
+  const [ticketQuantities, setTicketQuantities] = React.useState(Object.keys(tickets).length > 0
+  ? new Array(Object.keys(tickets).length).fill(0)
+  : []);
+  useEffect(() => {
+    console.log(ticketQuantities)
+  }, [ticketQuantities])
+  const handleAchat = () => async () => {
+    console.log(tickets)
+    console.log(ticketQuantities)
+    let realTickets = Object.keys(tickets).map((name, index) => ({
+      name: name,
+      price: tickets[name].price,
+      event: tickets[name].event,
+      numberOfTickets: ticketQuantities[index],
+    }));
+    console.log(realTickets)
+    await axios.put(`${process.env.NEXT_PUBLIC_STRAPI_URL}/acheter-ticket`, {
+          realTickets,
+        }, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + jwt,
+          },
+        }).then((response) => {
+          if (response.status === 200) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Votre ticket a été acheté avec succès',
+              showConfirmButton: false,
+              timer: 1500
+          })
+          }
+        }).catch((error) => {
+          console.log(error)
+          Swal.fire({
+            icon: 'error',
+            title: "L'achat a échoué",
+            showConfirmButton: false,
+        })
+        });
+        //handleRefresh()
+  }
   return (
     <Box sx={{
       width: "90vw",
       mt: 8
     }}>
       <Typography variant="h5" className="text-white font-extrabold tracking-widest capitalize pt-8 pb-4"> billets </Typography>
-      {tickets?.map((ticket) => {
-        const { id, attributes } = ticket;
-        const { name, description, price, quantity } = attributes;
-        const purchasedQuantity = ticketQuantities[id] || 0;
+      {Object.keys(tickets).map((key, index) => {
+        let numberOfTickets = ticketQuantities[index]
+        const { quantity, price, name } = tickets[key];
         return (
           <>
             <Box sx={{
@@ -72,8 +90,8 @@ const Tickets = ({ tickets, eventId }) => {
               <Card className="bg-white rounded-md flex flex-col p-4 2xl:w-[700px] xl:w-[500px] w-[700px] my-8">
 
                 <CardContent className="flex  justify-between flex-col" >
-                  <Typography className="text-xl capitalize font-bold">{name}</Typography>
-                  <Typography className=" capitalize ">{description}</Typography>
+                  <Typography className="text-xl capitalize font-bold">{key}</Typography>
+                  {/* <Typography className=" capitalize ">{description}</Typography> */}
                 </CardContent>
                 <CardActions className="flex justify-between px-4">
                   <Stack >
@@ -86,59 +104,50 @@ const Tickets = ({ tickets, eventId }) => {
 
                   {quantity !== 0 ?
 
-                    <Stack flexDirection="row " >
+                    <Stack flexDirection="row" sx={{alignItems:"center"}} >
 
                       <IconButton
                         variant="outlined"
                         className="border-ctaprimary rounded-full hover:bg-redfaint   px-4 hover:border-ctaprimary text-dark"
                         onClick={() => {
-                          handlePurchaseTicket(id, "decrease")
+                          setTicketQuantities((prev) => {
+                            const newQuantities = [...prev];
+                            newQuantities[index] = numberOfTickets - 1;
+                            return newQuantities;
+                          })
                         }}
-                        disabled={quantity === 0} // Disable the IconButton if the ticket quantity is 0
+                        disabled={quantity === 0 || ticketQuantities[index] === 0} // Disable the IconButton if the ticket quantity is 0
                       >
                         -
                       </IconButton>
-
+                        <Typography className=" align-middle">{numberOfTickets}</Typography>
                       <IconButton
                         variant="outlined"
                         className="border-ctaprimary hover:bg-redfaint rounded-full px-4 hover:border-ctaprimary text-dark"
                         onClick={() => {
-                          handlePurchaseTicket(id, "increase")
+                          setTicketQuantities((prev) => {
+                            const newQuantities = [...prev];
+                            newQuantities[index] = numberOfTickets + 1;
+                            return newQuantities;
+                          })
                         }}
-                        disabled={quantity === 0} // Disable the button if the ticket quantity is 0
+                        disabled={quantity === 0 || ticketQuantities[index] === quantity} // Disable the button if the ticket quantity is 0
                       >
                         +
                       </IconButton>
+                      
 
                     </Stack>
                     : <Typography>les tickets sont epuises</Typography>}
                 </CardActions>
               </Card>
-              {designatedTicketId === id && purchasedQuantity !== 0 &&
-                <Card className="bg-white rounded-md 2xl:w-[400px] flex flex-col items-stretch  xl:w-[500px] w-[700px] ">
-
-                  <CardContent>
-
-                    <Typography className="font-bold text-2xl"> x {purchasedQuantity} </Typography>
-                    <Typography className="font-bold capitalize"> articles selectionnes</Typography>
-                    <Typography className="font-bold capitalize bg-gray-300 p-4 mt-8 -mx-4"> {name}</Typography>
-                    <Stack flexDirection="row" justifyContent="space-between" pt={9}>
-                      <Typography>total</Typography>
-                      <Typography className="font-bold">
-                        {(price * purchasedQuantity).toLocaleString(undefined, { useGrouping: true, style: "currency", currency: "DZA" })}
-                      </Typography>
-                    </Stack>
-                  </CardContent>
-                  <CardActions className="flex flex-col">
-
-                    <Button className="bg-ctaprimary text-white hover:bg-ctaprimaryhover hover:text-gray-200 self-stretch" onClick={() => updateTickets()}>accheter</Button>
-                  </CardActions>
-                </Card>
-              }
             </Box>
           </>
         );
       })}
+      <Button variant="outlined" className="hover:bg-ctaprimaryhover border-ctaprimaryhover/80 text-white hover:border-ctaprimary bg-ctaprimaryhover/80" onClick={handleAchat()}>
+        acheter
+        </Button> 
     </Box>
   );
 };
@@ -159,6 +168,7 @@ const Event = () => {
           Authorization: `Bearer ${jwt}`,
         },
       }).then(res => {
+        
         setsingle(res.data.data.attributes)
       }).catch(err => console.log(err))
   }
@@ -167,6 +177,7 @@ const Event = () => {
       fetchEvent();
     }
   }, [eventId])
+  
   if (!single) {
     return <div>Loading...</div>;
   }
@@ -235,7 +246,7 @@ const Event = () => {
 
               <Button variant="outlined" className="hover:bg-ctaprimaryhover border-ctaprimary text-white hover:border-ctaprimary" onClick={() => setopen(!open)}>acheter un ticket</Button>
               {open &&
-                single?.tickets && <Tickets tickets={single?.tickets.data} eventId={eventId} />
+                single?.tickets && <Tickets single={single} jwt={jwt} eventId={eventId} />
               }
               <Stack>
                 <Typography variant="h5" className="text-white font-bold">

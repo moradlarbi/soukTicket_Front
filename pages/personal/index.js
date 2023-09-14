@@ -135,6 +135,26 @@ function LabTabs({ one, two }) {
     <Box className="xl:px-28 lg:px-36  px-6">
       <TabContext value={value}>
         <Box>
+          
+          <Box className=" flex gap-2 p-6">
+            <Createbutton/>
+            <Link href="/personal/check">
+              <Button
+                variant="inherit"
+                sx={{
+                  border: "solid 1px white",
+                  borderRadius: "5px",
+                  color: "white",
+                  "&:hover": {
+                    bgcolor: "white",
+                    color: "black",
+                  },
+                }}
+              >
+                Check-in un événement
+              </Button>
+            </Link>
+          </Box>
           <StyledTabs
             value={value}
             onChange={handleChange}
@@ -143,7 +163,6 @@ function LabTabs({ one, two }) {
             <StyledTab label="Publiés" value="1" />
 
             <StyledTab label="Non Publiés" value="2" />
-            <Createbutton className="self-start" />
           </StyledTabs>
           <Box>
             <TabPanel value="1">{two}</TabPanel>
